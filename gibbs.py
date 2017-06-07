@@ -3,13 +3,11 @@
 
 import numpy as np
 import random
-import sys
 
 
-# TODO V=10 N=20
-
-def inicjalizacja(V=2, N=3, X=2, R_MAX=500, gamma_pi=[1,1]):
+def inicjalizacja(V=10, N=20, R_MAX=500, gamma_pi=[1, 1]):
     # R_MAX: maksymalna liczba słów w dokumencie
+    X = 2
     # X: liczba labels
 
     gamma_theta = np.ones(V)
@@ -45,19 +43,17 @@ def inicjalizacja(V=2, N=3, X=2, R_MAX=500, gamma_pi=[1,1]):
     print('Thetas', thetas)
     print('Word counts of labels', Nc)
 
-    return W, L, thetas, Nc, C, gamma_theta
+    return W, L, thetas, Nc, C, gamma_theta, X
 
 
-# TODO T=100
-def gibbs(T=10, burn_in=5, V=5, N=3, X=2, R_MAX=500, gamma_pi=[1,1]):
-    W, L, thetas, Nc, C, gamma_theta = inicjalizacja(V, N, X, R_MAX, gamma_pi)
+def gibbs(T=100, burn_in=5, V=5, N=3, R_MAX=500, gamma_pi=[1, 1]):
+    W, L, thetas, Nc, C, gamma_theta, X = inicjalizacja(V, N, R_MAX, gamma_pi)
     stats_thetas = []
     stats_ls = []
     for t in range(T):
         for j in range(N):  # po dokumentach
             label = L[j]
             Nc[label] = [Nc[label][i] - W[j][i] for i in range(len(Nc[label]))]
-            # TODO ew zmienic
             L[j] = -1
 
             values = []
@@ -67,14 +63,13 @@ def gibbs(T=10, burn_in=5, V=5, N=3, X=2, R_MAX=500, gamma_pi=[1,1]):
                     czynnik *= (thetas[x][v] ** W[j][v])
                 values.append(czynnik)
 
-            distribution = [val / float(sum(values)) for val in values]
+            distribution = [val / float(sum(values)) if sum(values) != 0 else 0 for val in values]
 
             L[j] = np.random.binomial(1, distribution[0], 1)[0]
             Nc[L[j]] = [Nc[L[j]][i] + W[j][i] for i in range(len(Nc[L[j]]))]
 
-
         for x in range(X):
-            tx=[]
+            tx = []
             for v in range(V):
                 tx.append(Nc[x][v] + gamma_theta[v])
             thetas[x] = np.random.dirichlet(tx, 1)[0].tolist()
@@ -83,7 +78,8 @@ def gibbs(T=10, burn_in=5, V=5, N=3, X=2, R_MAX=500, gamma_pi=[1,1]):
             stats_thetas.append(thetas)
             stats_ls.append(L)
             print('For t= ', t, thetas)
-            print(' L: ', L)
+            print('L: ', L)
+
 
 if __name__ == '__main__':
     gibbs()
